@@ -5,19 +5,83 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+
+/**
+ * For the linked list implementation
+ */
 struct Node{
     int value;
     struct Node* next;
 };
 
-typedef struct Node *node;
+/**
+ * For selecting which action to execute by the thread
+ */
+struct Action {
+    int value;
+    char command;
+};
 
+typedef struct Node *node;
+typedef struct Action *action;
+
+int n = 4;
+int m =3;
+int mCurrent =0;
+int mMember=1,mInsert=1,mDelete=1;
+
+
+/**
+ * Support function to generate a node in linked list
+ * @return
+ */
 node createNode(){
     node temp;
     temp = (node)malloc(sizeof(struct Node));
     temp->next = NULL;
     return temp;
 }
+
+/**
+ * Support function to create a action
+ * @param value
+ * @param c
+ * @return
+ */
+action createAction(int value,char c){
+    action act;
+    act = (action)malloc(sizeof(struct Action));
+    act->value = value;
+    act->command = c;
+}
+
+/**
+ * Function to create set of random functions
+ * @return
+ */
+action getNextAction(){
+    action instruction;
+
+    if(mCurrent<m){
+        int randomNumber= rand();
+        if(mCurrent<mMember){
+            instruction = createAction(randomNumber,'M');
+        }
+        else if(mCurrent<(mMember+mInsert)){
+            instruction = createAction(randomNumber,'I');
+        }
+        else{
+            instruction = createAction(randomNumber,'D');
+        }
+    }
+    else {
+        instruction = createAction(-1,'E');
+    }
+    mCurrent += 1;
+    return instruction;
+
+}
+/*##################LINKED LIST IMPLEMENTATION########################### */
 
 int Member(node head,int value){
 
@@ -71,14 +135,7 @@ node Delete(node head,int value){
         }
     }
     return head;
-
-
 }
-
-int n = 0;
-int m =0;
-int mCurrent =0;
-int mMember,mInsert,mDelete;
 
 node initLinkedList(int size){
     srand(time(NULL));
@@ -95,40 +152,31 @@ node initLinkedList(int size){
     return head;
 }
 
-char* getNextAction(){
+/*##################END OF LINKED LIST IMPLEMENTATION########################### */
 
-    char* command;
-    if(mCurrent<m){
-        int randomNumber= rand();
-        if(mCurrent<mMember){
-            command = "M"+randomNumber;
-        }
-        else if(mCurrent<(mMember+mInsert)){
-            command = "I"+randomNumber;
-        }
-        else{
-            command = "D"+randomNumber;
-        }
+void execute(action next,node head){
+    if(next->command=='M'){
+        Member(head,next->value);
     }
-    else {
-        command = "E";
+    else if(next->command=='I'){
+        Insert(head,next->value);
     }
+    else if(next->command=='D'){
+        Delete(head,next->value);
+    }
+}
 
-    mCurrent += 1;
-    return command;
+void manage(){
+    node head = initLinkedList(n);
+
+    action next = getNextAction();
+
+    while(next->command!='E'){
+        execute(next,head);
+        next = getNextAction();
+    }
 }
 
 int main() {
-    node head = initLinkedList(10);
-    printf("Hello World\n");
-//    node head = Insert(NULL,10);
-    Insert(head,14);
-    Insert(head,67);
-    Insert(head,128);
-    printf("%d\n",Member(head,10));
-    printf("***********\n");
-    Delete(head,67);
-    printf("%d\n",Member(head,10));
-    printf("%d\n",Member(head,14));
-    printf("%d\n",head->value);
+    manage();
 }
