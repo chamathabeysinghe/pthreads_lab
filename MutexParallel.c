@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <pthread.h>
+#include "timer.h"
 
 /**
  * For the linked list implementation
@@ -25,10 +27,14 @@ struct Action {
 typedef struct Node *node;
 typedef struct Action *action;
 
-int n = 4;
-int m =3;
+int n = 1000;
+int m =10000;
 int mCurrent =0;
-int mMember=1,mInsert=1,mDelete=1;
+int mMember=5000,mInsert=3000,mDelete=2000;
+
+int thread_count;
+pthread_mutex_t linkedListMutex;
+pthread_mutex_t actionGeneratorMutex;
 
 
 /**
@@ -60,6 +66,7 @@ action createAction(int value,char c){
  * @return
  */
 action getNextAction(){
+    pthread_mutex_lock(&actionGeneratorMutex);
     action instruction;
 
     if(mCurrent<m){
@@ -78,6 +85,7 @@ action getNextAction(){
         instruction = createAction(-1,'E');
     }
     mCurrent += 1;
+    pthread_mutex_unlock(&actionGeneratorMutex);
     return instruction;
 
 }
@@ -85,6 +93,7 @@ action getNextAction(){
 
 int Member(node head,int value){
 
+    pthread_mutex_lock(&linkedListMutex);
     node currentNode = head;
 
     while(currentNode!=NULL){
@@ -92,10 +101,12 @@ int Member(node head,int value){
             return 1;
         currentNode = currentNode->next;
     }
+    pthread_mutex_unlock(&linkedListMutex);
     return 0;
 }
 
 node Insert(node head,int value){
+    pthread_mutex_lock(&linkedListMutex);
     node temp,p;
     temp = createNode();
     temp->value = value;
@@ -109,10 +120,12 @@ node Insert(node head,int value){
         }
         p->next = temp;
     }
+    pthread_mutex_unlock(&linkedListMutex);
     return head;
 }
 
 node Delete(node head,int value){
+    pthread_mutex_lock(&linkedListMutex);
     if(head==NULL){
         return head;
     }
@@ -134,6 +147,9 @@ node Delete(node head,int value){
             p = p->next;
         }
     }
+
+    pthread_mutex_unlock(&linkedListMutex);
+
     return head;
 }
 
@@ -166,9 +182,8 @@ void execute(action next,node head){
     }
 }
 
-void manage(){
-    node head = initLinkedList(n);
-
+void *manage(void* input ){
+    node head = (node)input;
     action next = getNextAction();
 
     while(next->command!='E'){
@@ -177,6 +192,35 @@ void manage(){
     }
 }
 
-int main() {
-    manage();
+void *Hello(void* rank){
+    pthread_mutex_lock(&linkedListMutex);
+
+    long my_rank = (long)rank;
+    printf("My rank is %ld\n",my_rank);
+
+    pthread_mutex_unlock(&linkedListMutex);
+}
+
+int main(int argc,char* argv[]){
+    long thread;
+    pthread_t *thread_handles;
+    thread_count = strtol(argv[1],NULL,10);
+
+    thread_handles = malloc(thread_count*sizeof(pthread_t));
+    pthread_mutex_init(&linkedListMutex, NULL);
+    pthread_mutex_init(&actionGeneratorMutex, NULL);
+    double start,finish,elapsed;
+    node head = initLinkedList(n);
+
+    GET_TIME(start);
+
+    for(thread = 0; thread<thread_count;thread++){
+        pthread_create(&thread_handles[thread],NULL,manage,(void*) head);
+    }
+    for(thread=0;thread<thread_count;thread++){
+        pthread_join(thread_handles[thread],NULL);
+    }
+    GET_TIME(finish);
+
+    printf("%e",(finish-start));
 }
