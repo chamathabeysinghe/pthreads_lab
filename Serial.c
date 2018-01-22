@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include "timer.h"
 
 /**
  * For the linked list implementation
@@ -25,10 +26,10 @@ struct Action {
 typedef struct Node *node;
 typedef struct Action *action;
 
-int n = 4;
-int m =3;
+int n = 1000;
+int m = 10000;
 int mCurrent =0;
-int mMember=1,mInsert=1,mDelete=1;
+int mMember=5000,mInsert=3000,mDelete=2000;
 
 
 /**
@@ -61,7 +62,6 @@ action createAction(int value,char c){
  */
 action getNextAction(){
     action instruction;
-
     if(mCurrent<m){
         int randomNumber= rand();
         if(mCurrent<mMember){
@@ -86,7 +86,6 @@ action getNextAction(){
 int Member(node head,int value){
 
     node currentNode = head;
-
     while(currentNode!=NULL){
         if(currentNode->value==value)
             return 1;
@@ -166,8 +165,7 @@ void execute(action next,node head){
     }
 }
 
-void manage(){
-    node head = initLinkedList(n);
+void manage(node head){
 
     action next = getNextAction();
 
@@ -178,5 +176,10 @@ void manage(){
 }
 
 int main() {
-    manage();
+    node head = initLinkedList(n);
+    double start,finish, elapsed;
+    GET_TIME(start);
+    manage(head);
+    GET_TIME(finish);
+    printf("%e",(finish-start));
 }
